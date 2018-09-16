@@ -21,7 +21,7 @@ def client_sender(buffer):
 
     try:
         # Connect to the target host
-        client.connect((target, port))
+        client.connect((TARGET, PORT))
 
         if len(buffer):
             client.send(buffer)
@@ -33,7 +33,7 @@ def client_sender(buffer):
             response = ''
 
             while recv_len:
-                data = client.recv(4096)
+                data = client.recv(4096).decode()
                 recv_len = len(data)
                 response += data
 
@@ -43,58 +43,21 @@ def client_sender(buffer):
             print(response)
 
             # Wait for more input
-            buffer = raw_input('')
+            buffer = input('')
             buffer += '\n'
 
             # Send it off
-            client.send(buffer)
+            client.send(bytes(buffer, 'utf-8'))
 
     except Exception as err:
         print('[*] Exception! Exiting.')
-        print(srt(err))
+        print(str(err))
 
         # Close connection
         client.close()
 
 
-def server_loop():
-    global TARGET
-
-    # If no target is defined, we listen on all interfaces
-    if not len(target):
-        target = '0.0.0.0'
-
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((target, port))
-    server.listen(5)
-
-    while True:
-        client_socket, addr = server.accept()
-
-        # Spin off a thread to handle the new client
-        client_thread = threading.Thread(
-            target=client_hanler, args=(client_socket,))
-
-        client_thread.start()
-
-
-def run_command(command):
-
-    # Trim the newline
-    command = command.rstrip()
-
-    # Run the command and get the output back
-    try:
-        output = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
-
-    except Exception:
-        output = 'Failed to execute command. \r\n'
-
-    # Send the output back to the lient
-    return output
-
-
-def client_handler():
+def client_handler(client_socket):
     global UPLOAD
     global EXECUTE
     global COMMAND
@@ -128,30 +91,67 @@ def client_handler():
                 UPLOAD_DESTINATION))
 
     # Check for command execution
-    if len(execute):
+    if len(EXECUTE):
 
         # Run the command
-        output = run_command(execute)
+        output = run_command(EXECUTE)
 
         client_socket.send(output)
 
     # Go into another loop if a command shell was requested
-    if command:
+    if COMMAND:
         while True:
 
             # Show a simple prompt
-            client_socket.send('<netbat:#> ')
+            client_socket.send(b'<netbat:#> ')
 
             # Receive untill a linefeed (enter key) is seen
             cmd_buffer = ''
             while '\n' not in cmd_buffer:
-                cmd_buffer += client_socket.recv(1024)
+                cmd_buffer += str(client_socket.recv(1024))
 
             # Send back the command output
             response = run_command(cmd_buffer)
 
             # Send back the response
             client_socket.send(response)
+
+
+def server_loop():
+    global TARGET
+
+    # If no target is defined, we listen on all interfaces
+    if not len(TARGET):
+        TARGET = '0.0.0.0'
+
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((TARGET, PORT))
+    server.listen(5)
+
+    while True:
+        client_socket, addr = server.accept()
+
+        # Spin off a thread to handle the new client
+        client_thread = threading.Thread(
+            target=client_handler, args=(client_socket,))
+
+        client_thread.start()
+
+
+def run_command(command):
+
+    # Trim the newline
+    command = command.rstrip()
+
+    # Run the command and get the output back
+    try:
+        output = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
+
+    except Exception:
+        output = 'Failed to execute command. \r\n'
+
+    # Send the output back to the lient
+    return output
 
 
 def usage(error):
@@ -195,7 +195,7 @@ def main():
     for o, a in opts:
         if o in ('-h', '--help'):
             usage()
-        elif 0 in ('-l', '--listen'):
+        elif o in ('-l', '--listen'):
             LISTEN = True
         elif o in ('-c', '--commandshell'):
             COMMAND = True
@@ -220,3 +220,6 @@ def main():
 
     if LISTEN:
         server_loop()
+
+
+main()
