@@ -14,7 +14,7 @@ TARGET = ''
 UPLOAD = False
 
 
-def cliend_sender(buffer):
+def client_sender(buffer):
 
     # Set a TCP object
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -48,6 +48,7 @@ def cliend_sender(buffer):
 
             # Send it off
             client.send(buffer)
+
     except Exception as err:
         print('[*] Exception! Exiting.')
         print(srt(err))
@@ -56,10 +57,119 @@ def cliend_sender(buffer):
         client.close()
 
 
-# TODO: Implement this function
+def server_loop():
+    global TARGET
+
+    # If no target is defined, we listen on all interfaces
+    if not len(target):
+        target = '0.0.0.0'
+
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((target, port))
+    server.listen(5)
+
+    while True:
+        client_socket, addr = server.accept()
+
+        # Spin off a thread to handle the new client
+        client_thread = threading.Thread(
+            target=client_hanler, args=(client_socket,))
+
+        client_thread.start()
+
+
+def run_command(command):
+
+    # Trim the newline
+    command = command.rstrip()
+
+    # Run the command and get the output back
+    try:
+        output = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
+
+    except Exception:
+        output = 'Failed to execute command. \r\n'
+
+    # Send the output back to the lient
+    return output
+
+
+def client_handler():
+    global UPLOAD
+    global EXECUTE
+    global COMMAND
+
+    # Check for upload
+    if len(UPLOAD_DESTINATION):
+
+        # Read all in all of the bytes and write to the destination
+        file_buffer = ''
+
+        # Keep reading data until none is available
+        while True:
+            data = client_socket.recv(1024)
+
+            if not data:
+                break
+            else:
+                file_buffer += data
+
+        # Now take these bytes and try to write them out
+        try:
+            file_descriptor = open(UPLOAD_DESTINATION, 'wb')
+            file_descriptor.write(file_buffer)
+            file_descriptor.close()
+
+            # Acknowledge that the file was written
+            client_socket.send('Successfully saved file to {0}\r\n'.format(
+                UPLOAD_DESTINATION))
+        except Exception:
+            client_socket.send('Failed to save file to {0}\r\n'.format(
+                UPLOAD_DESTINATION))
+
+    # Check for command execution
+    if len(execute):
+
+        # Run the command
+        output = run_command(execute)
+
+        client_socket.send(output)
+
+    # Go into another loop if a command shell was requested
+    if command:
+        while True:
+
+            # Show a simple prompt
+            client_socket.send('<netbat:#> ')
+
+            # Receive untill a linefeed (enter key) is seen
+            cmd_buffer = ''
+            while '\n' not in cmd_buffer:
+                cmd_buffer += client_socket.recv(1024)
+
+            # Send back the command output
+            response = run_command(cmd_buffer)
+
+            # Send back the response
+            client_socket.send(response)
+
+
 def usage():
-    print('Need a target.')
-    pass
+    print('NetBat Network Tool')
+    print('\r\n')
+    print('Usage: netbat.py -t target_host -p port')
+    print('-l --listen              - listen on [host]:[port] for incoming connections')
+    print('-e --execute=file_to_run - execute the given file upon receiving a connection')
+    print('-c --command             - initialize a command shell')
+    print('-u --upload=destination  - upon receiving a connection upload a file and write to [destination]')
+    print('\r\n')
+    print('\r\n')
+    print('Examples: ')
+    print('netbat.py -t 192.168.0.1 -p 5555 -l -c')
+    print('netbat.py -t 192.168.0.1 -p 5555 -l -u=C:\\target.exe')
+    print('netbat.py -t 192.168.0.1 -p 5555 -l -e=\"cat /etc/passwd\"')
+    print('echo \'ABCDEFGHI\' | ./netbat.py -t 192.168.11.12 -p 135')
+    sys.exit(0)
 
 
 def main():
@@ -107,24 +217,3 @@ def main():
 
     if LISTEN:
         server_loop()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
