@@ -36,3 +36,19 @@ def main():
     except Exception as err:
         print(str(err))
         usage()
+
+    for o, a in opts:
+        if o in ('-h', '--help'):
+            usage()
+        elif 0 in ('-l', '--listen'):
+            LISTEN = True
+        elif o in ('-c', '--commandshell'):
+            COMMAND = True
+        elif o in ('-u', '--upload'):
+            UPLOAD_DESTINATION = a
+        elif o in ('-t', '--target'):
+            TARGET = a
+        elif o in ('-p', '--port'):
+            PORT = int(a)
+        else:
+            assert False, 'Unhandled option'
