@@ -1,15 +1,20 @@
 import socket
 
 target_host = '127.0.0.1'
-target_port = 80
+target_port = 8000
 
-# Create a socket object
-client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+try:
 
-# Send some data
-client.sendto('asdfasdfa', (target_host, target_port))
+    # Create a socket object
+    client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-# Receive some data
-data, addr = client.recvfrom(4096)
+    # Send some data
+    client.sendto(b'asdfasdfa', (target_host, target_port))
 
-print(data)
+    # Receive some data
+    data, addr = str(client.recvfrom(4096))
+
+    print(data)
+
+except socket.timeout:
+    print('Cannot connect to {0} on port {1}'.format(target_host, target_port))
