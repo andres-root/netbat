@@ -154,7 +154,7 @@ def client_handler():
             client_socket.send(response)
 
 
-def usage():
+def usage(error):
     print('NetBat Network Tool')
     print('\r\n')
     print('Usage: netbat.py -t target_host -p port')
@@ -169,6 +169,10 @@ def usage():
     print('netbat.py -t 192.168.0.1 -p 5555 -l -u=C:\\target.exe')
     print('netbat.py -t 192.168.0.1 -p 5555 -l -e=\"cat /etc/passwd\"')
     print('echo \'ABCDEFGHI\' | ./netbat.py -t 192.168.11.12 -p 135')
+
+    if error:
+        print('Errors: {0}'.format(error))
+
     sys.exit(0)
 
 
@@ -186,8 +190,7 @@ def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'hle:t:p:cu', ['help', 'listen', 'execute', 'target', 'port', 'upload'])
     except Exception as err:
-        print(str(err))
-        usage()
+        usage(err)
 
     for o, a in opts:
         if o in ('-h', '--help'):
