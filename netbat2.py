@@ -155,7 +155,7 @@ def run_command(command):
     return output
 
 
-def usage(error):
+def usage(error=None):
     print('NetBat Network Tool')
     print('\r\n')
     print('Usage: netbat.py -t target_host -p port')
