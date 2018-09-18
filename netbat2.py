@@ -47,7 +47,7 @@ def client_sender(buffer):
             buffer += '\n'
 
             # Send it off
-            client.send(bytes(buffer, 'utf-8'))
+            client.send(buffer)
 
     except Exception as err:
         print('[*] Exception! Exiting.')
@@ -55,6 +55,7 @@ def client_sender(buffer):
 
         # Close connection
         client.close()
+        print('Connection closed.')
 
 
 def client_handler(client_socket):
