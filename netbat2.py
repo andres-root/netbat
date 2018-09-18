@@ -51,7 +51,7 @@ def client_sender(buffer):
 
     except Exception as err:
         print('[*] Exception! Exiting.')
-        print(str(err))
+        print('[*] {}'.format(str(err)))
 
         # Close connection
         client.close()
