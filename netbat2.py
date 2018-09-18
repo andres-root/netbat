@@ -148,8 +148,9 @@ def run_command(command):
     try:
         output = subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
 
-    except Exception:
+    except Exception as e:
         output = 'Failed to execute command. \r\n'
+        print(e)
 
     # Send the output back to the lient
     return output
@@ -206,8 +207,10 @@ def main():
             TARGET = a
         elif o in ('-p', '--port'):
             PORT = int(a)
+        elif o in ('-e', '--execute'):
+            EXECUTE = str(a)
         else:
-            assert False, 'Unhandled option'
+            assert False, 'Unhandled option: -{}'.format(o)
 
     # Listen or just send data from stdin
     if not LISTEN and len(TARGET) and PORT > 0:
