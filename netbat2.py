@@ -43,7 +43,7 @@ def client_sender(buffer):
             print(response)
 
             # Wait for more input
-            buffer = input('')
+            buffer = raw_input('')
             buffer += '\n'
 
             # Send it off
